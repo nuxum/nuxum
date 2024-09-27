@@ -20,7 +20,6 @@ export class Router {
   }
 
   private setupMiddlewares(): void {
-    if (this.options.prefix) this.app.use(this.options.prefix, this.app);
     if (this.options.cors) this.app.use(cors(this.options.cors === true ? {} : this.options.cors));
     if (this.options.defaultResponseHeaders) this.app.use((req, res, next) => {
       for (const [key, value] of Object.entries(this.options.defaultResponseHeaders!)) res.setHeader(key, value);
@@ -47,7 +46,7 @@ export class Router {
         const handler = this.createHandler(prototype[property]);
         const method: RequestMethod = Reflect.getMetadata(METHOD_METADATA, prototype[property]);
 
-        this.registerRoute(method, path, handler);
+        this.registerRoute(method, this.options.prefix + path, handler);
       }
     }
   }
