@@ -1,8 +1,9 @@
-export type ControllerClass = new (...args: any[]) => any;
+export type Class = new (...args: any[]) => any;
 
-export interface RouterOptions {
+export interface AppOptions {
   prefix?: string;
   cors?: boolean | { origin?: string, methods?: string[] };
   defaultResponseHeaders?: Record<string, string>;
-  controllers?: ControllerClass[];
+  controllers?: Class[];
+  middlewares?: Class[];
 }

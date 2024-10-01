@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 
+export * from './app';
 export * from './decorators';
-export * from './router';
+export * from './utils';
 export * from './validators';

@@ -7,4 +7,5 @@ export const isObject = (obj: any): obj is object => typeof obj === 'object' && 
 export const isConstructor = (obj: any): boolean => obj === 'constructor';
 export const isFunction = (obj: any): obj is Function => typeof obj === 'function';
 
-export * from './router.interface';
+export * from './app.interface';
+export * from './middleware.interface';
