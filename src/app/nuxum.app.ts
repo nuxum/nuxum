@@ -1,8 +1,8 @@
 import cors from 'cors';
 import express from 'express';
 import type { Express, NextFunction, Request, Response } from 'express';
-import { isConstructor, isFunction, AppOptions, NuxumMiddleware, Class } from '../utils';
-import { INJECTABLE_METADATA, METHOD_METADATA, MIDDLEWARE_METADATA, PATH_METADATA } from '../constants';
+import { isConstructor, isFunction, AppOptions, isInjectable, Class } from '../utils';
+import { METHOD_METADATA, PATH_METADATA } from '../constants';
 import { RequestMethod } from '../enums';
 import { MethodMetadata } from '../decorators';
 import { validateBody, validateQuery } from '../validators';
@@ -28,8 +28,7 @@ export class NuxumApp {
     });
 
     if (this.options.middlewares && this.options.middlewares.length !== 0) for (const Middleware of this.options.middlewares) {
-      const isInjectable = Reflect.getMetadata(INJECTABLE_METADATA, Middleware);
-      if (!isInjectable) throw new Error(`Middleware ${Middleware.name} must be decorated with @Injectable()`);
+      if (!isInjectable(Middleware)) throw new Error(`Middleware ${Middleware.name} must be decorated with @Injectable()`);
       this.instance.use((req, res, next) => new Middleware().use(req, res, next));
     }
   }
@@ -61,13 +60,6 @@ export class NuxumApp {
   private createHandler(method: Function): (req: Request, res: Response, next: NextFunction) => void {
     return (req: Request, res: Response, next: NextFunction) => {
       const routeOptions: MethodMetadata = Reflect.getMetadata(PATH_METADATA, method) || {};
-      const middlewares: Class[] = Reflect.getMetadata(MIDDLEWARE_METADATA, method) || [];
-
-      for (const middleware of middlewares) {
-        const isInjectable = Reflect.getMetadata(INJECTABLE_METADATA, middleware);
-        if (!isInjectable) throw new Error(`Middleware ${middleware.name} must be decorated with @Injectable()`);
-        // new middleware().use(req, res, next);
-      }
 
       if (routeOptions.query && routeOptions.query.length !== 0 && !validateQuery(req, res, req.query, routeOptions.query)) return;
       if (routeOptions.body && routeOptions.body.length !== 0 && !validateBody(req, res, req.body, routeOptions.body)) return;
@@ -97,8 +89,9 @@ export class NuxumApp {
     });
   }
 
-  public use(middleware: NuxumMiddleware): void {
-    this.instance.use((req, res, next) => middleware.use(req, res, next));
+  public use(middleware: Class): void {
+    if (!isInjectable(middleware)) throw new Error(`Middleware ${middleware.name} must be decorated with @Injectable()`);
+    this.instance.use((req, res, next) => new middleware().use(req, res, next));
   }
 
   public listen(port: string | number, callback?: () => void): void {

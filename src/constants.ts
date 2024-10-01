@@ -2,6 +2,5 @@ export const BODY_METADATA = 'body';
 export const CONTROLLER_METADATA = 'controller';
 export const INJECTABLE_METADATA = 'injectable';
 export const METHOD_METADATA = 'method';
-export const MIDDLEWARE_METADATA = 'middleware';
 export const PATH_METADATA = 'path';
 export const QUERY_METADATA = 'query';
