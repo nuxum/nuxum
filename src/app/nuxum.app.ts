@@ -6,6 +6,7 @@ import { METHOD_METADATA, PATH_METADATA } from '../constants';
 import { RequestMethod } from '../enums';
 import { MethodMetadata } from '../decorators';
 import { validateBody, validateQuery } from '../validators';
+import { Logger } from '../utils/logger.util';
 
 export class NuxumApp {
   private instance: Express;
@@ -14,6 +15,8 @@ export class NuxumApp {
   constructor(options: AppOptions) {
     this.instance = express();
     this.options = options;
+
+    Logger.initialize(this.options.logger || false);
 
     this.setupMiddlewares();
     this.setupControllers();
@@ -30,6 +33,7 @@ export class NuxumApp {
     if (this.options.middlewares && this.options.middlewares.length !== 0) for (const Middleware of this.options.middlewares) {
       if (!isInjectable(Middleware)) throw new Error(`Middleware ${Middleware.name} must be decorated with @Injectable()`);
       this.instance.use((req, res, next) => new Middleware().use(req, res, next));
+      Logger.middleware(Middleware.name);
     }
   }
 
@@ -53,13 +57,17 @@ export class NuxumApp {
         const method: RequestMethod = Reflect.getMetadata(METHOD_METADATA, prototype[property]);
 
         this.registerRoute(method, this.options.prefix + path, handler);
+        Logger.route(RequestMethod[method], this.options.prefix + path);
       }
+      Logger.controller(Controller.name);
     }
   }
 
   private createHandler(method: Function): (req: Request, res: Response, next: NextFunction) => void {
     return (req: Request, res: Response, next: NextFunction) => {
       const routeOptions: MethodMetadata = Reflect.getMetadata(PATH_METADATA, method) || {};
+
+      Logger.request(req.method, req.path);
 
       if (routeOptions.query && routeOptions.query.length !== 0 && !validateQuery(req, res, req.query, routeOptions.query)) return;
       if (routeOptions.body && routeOptions.body.length !== 0 && !validateBody(req, res, req.body, routeOptions.body)) return;
@@ -95,6 +103,9 @@ export class NuxumApp {
   }
 
   public listen(port: string | number, callback?: () => void): void {
-    this.instance.listen(port, callback);
+    this.instance.listen(port, () => {
+      Logger.server(port);
+      if (callback) callback();
+    });
   }
 }
