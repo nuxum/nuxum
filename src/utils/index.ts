@@ -9,7 +9,8 @@ export const isEmpty = (array: any): boolean => !(array && array.length > 0);
 export const isObject = (obj: any): obj is object => typeof obj === 'object' && obj !== null;
 export const isConstructor = (obj: any): boolean => obj === 'constructor';
 export const isFunction = (obj: any): obj is Function => typeof obj === 'function';
-export const isInjectable = (obj: Class): boolean => Reflect.getMetadata(INJECTABLE_METADATA, obj);
+export const isInjectable = (obj: Class): boolean => !!Reflect.getMetadata(INJECTABLE_METADATA, obj);
 
 export * from './app.interface';
+export * from './logger.util';
 export * from './middleware.interface';
