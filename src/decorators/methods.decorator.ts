@@ -25,10 +25,10 @@ export const Method = (
   const body = metadata[BODY_METADATA];
 
   return (target: object, key: string | symbol, descriptor: TypedPropertyDescriptor<any>): TypedPropertyDescriptor<any> => {
-    Reflect.defineMetadata(PATH_METADATA, path, descriptor.value!);
-    Reflect.defineMetadata(METHOD_METADATA, requestMethod, descriptor.value!);
-    Reflect.defineMetadata(QUERY_METADATA, query, descriptor.value!);
-    Reflect.defineMetadata(BODY_METADATA, body, descriptor.value!);
+    Reflect.defineMetadata(PATH_METADATA, path, descriptor.value);
+    Reflect.defineMetadata(METHOD_METADATA, requestMethod, descriptor.value);
+    Reflect.defineMetadata(QUERY_METADATA, query, descriptor.value);
+    Reflect.defineMetadata(BODY_METADATA, body, descriptor.value);
     return descriptor;
   };
 };

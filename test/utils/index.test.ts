@@ -5,82 +5,58 @@ import { isUndefined, isNil, isString, isNumber, isEmpty, isObject, isConstructo
 
 describe('Utils', () => {
   describe('isUndefined', () => {
-    it('should return true', () => {
+    it('should work', () => {
       expect(isUndefined(undefined)).toBe(true);
-    });
-
-    it('should return false', () => {
       expect(isUndefined(null)).toBe(false);
     });
   });
 
   describe('isNil', () => {
-    it('should return true', () => {
+    it('should work', () => {
       expect(isNil(null)).toBe(true);
       expect(isNil(undefined)).toBe(true);
-    });
-
-    it('should return false', () => {
       expect(isNil('')).toBe(false);
     });
   });
 
   describe('isString', () => {
-    it('should return true', () => {
+    it('should work', () => {
       expect(isString('')).toBe(true);
-    });
-
-    it('should return false', () => {
       expect(isString(1)).toBe(false);
     });
   });
 
   describe('isNumber', () => {
-    it('should return true', () => {
+    it('should work', () => {
       expect(isNumber(1)).toBe(true);
-    });
-
-    it('should return false', () => {
       expect(isNumber('')).toBe(false);
     });
   });
 
   describe('isEmpty', () => {
-    it('should return true', () => {
+    it('should work', () => {
       expect(isEmpty([])).toBe(true);
-    });
-
-    it('should return false', () => {
       expect(isEmpty([1])).toBe(false);
     });
   });
 
   describe('isObject', () => {
-    it('should return true', () => {
+    it('should work', () => {
       expect(isObject({})).toBe(true);
-    });
-
-    it('should return false', () => {
       expect(isObject('')).toBe(false);
     });
   });
 
   describe('isConstructor', () => {
-    it('should return true', () => {
+    it('should work', () => {
       expect(isConstructor('constructor')).toBe(true);
-    });
-
-    it('should return false', () => {
       expect(isConstructor('')).toBe(false);
     });
   });
 
   describe('isFunction', () => {
-    it('should return true', () => {
+    it('should work', () => {
       expect(isFunction(() => { })).toBe(true);
-    });
-
-    it('should return false', () => {
       expect(isFunction('')).toBe(false);
     });
   });

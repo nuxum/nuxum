@@ -39,7 +39,7 @@ export class NuxumApp {
 
   private setupControllers(): void {
     if (this.options.controllers) for (const Controller of this.options.controllers) {
-      const path = Reflect.getMetadata(PATH_METADATA, Controller) || '/';
+      const path = Reflect.getMetadata(PATH_METADATA, Controller);
       const prototype = Controller.prototype;
 
       for (const property of Object.getOwnPropertyNames(prototype)) {
@@ -54,10 +54,11 @@ export class NuxumApp {
         ) continue;
 
         const handler = this.createHandler(prototype[property]);
+        const method_path: string = Reflect.getMetadata(PATH_METADATA, prototype[property]);
         const method: RequestMethod = Reflect.getMetadata(METHOD_METADATA, prototype[property]);
 
-        this.registerRoute(method, this.options.prefix + path, handler);
-        Logger.route(RequestMethod[method], this.options.prefix + path);
+        this.registerRoute(method, (this.options.prefix || '') + path + method_path, handler);
+        Logger.route(RequestMethod[method], (this.options.prefix || '') + path + method_path);
       }
       Logger.controller(Controller.name);
     }
@@ -65,19 +66,28 @@ export class NuxumApp {
 
   private createHandler(method: Function): (req: Request, res: Response, next: NextFunction) => void {
     return (req: Request, res: Response, next: NextFunction) => {
-      const routeOptions: MethodMetadata = Reflect.getMetadata(PATH_METADATA, method) || {};
+      const routeOptions: MethodMetadata = Reflect.getMetadata(PATH_METADATA, method);
+
+      if (!routeOptions) return next();
 
       Logger.request(req.method, req.path);
 
-      if (routeOptions.query && routeOptions.query.length !== 0 && !validateQuery(req, res, req.query, routeOptions.query)) return;
-      if (routeOptions.body && routeOptions.body.length !== 0 && !validateBody(req, res, req.body, routeOptions.body)) return;
+      if (routeOptions.query) {
+        const queryValidation = validateQuery(req.query, routeOptions.query);
+        if (routeOptions.query.length !== 0 && typeof queryValidation === 'string') return res.status(400).send({ message: queryValidation });
+      }
+
+      if (routeOptions.body) {
+        const bodyValidation = validateBody(req.body, routeOptions.body);
+        if (routeOptions.body.length !== 0 && typeof bodyValidation === 'string') return res.status(400).send({ message: bodyValidation });
+      }
 
       method(req, res, next);
     };
   }
 
   private registerRoute(method: RequestMethod, path: string, handler: (req: Request, res: Response, next: NextFunction) => void) {
-    const routePath = `${path}${Reflect.getMetadata(PATH_METADATA, handler) || '/'}`;
+    const routePath = path + (Reflect.getMetadata(PATH_METADATA, handler) || '/');
     switch (method) {
       case RequestMethod.GET: this.instance.get(routePath, handler); break;
       case RequestMethod.POST: this.instance.post(routePath, handler); break;

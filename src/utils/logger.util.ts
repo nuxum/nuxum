@@ -12,12 +12,8 @@ export class Logger {
     request: '0;92',
   };
 
-  private static isColorEnabled(): boolean {
-    return !!(process.stdout.isTTY && process.env.FORCE_COLOR !== '0');
-  }
-
   private static colorize(text: string, color: string): string {
-    return this.isColorEnabled() ? `\x1b[${color}m${text}\x1b[0m` : text;
+    return process.env.FORCE_COLOR !== '0' ? `\x1b[${color}m${text}\x1b[0m` : text;
   }
 
   static initialize(enabled: boolean): void {

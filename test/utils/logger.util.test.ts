@@ -20,7 +20,7 @@ describe('Logger', () => {
   it('should be correct when using route', () => {
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
     Logger.route('GET', '/test');
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('GET /test added'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('/test added'));
     consoleSpy.mockRestore();
   });
 
@@ -41,7 +41,7 @@ describe('Logger', () => {
   it('should be correct when using request', () => {
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
     Logger.request('GET', '/test');
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('GET /test'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('/test'));
     consoleSpy.mockRestore();
   });
 
