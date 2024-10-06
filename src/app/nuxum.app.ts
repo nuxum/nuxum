@@ -1,8 +1,8 @@
 import cors from 'cors';
 import express from 'express';
 import type { Express, NextFunction, Request, Response } from 'express';
-import { isConstructor, isFunction, AppOptions, isInjectable, Class } from '../utils';
-import { METHOD_METADATA, PATH_METADATA } from '../constants';
+import { isConstructor, isFunction, AppOptions, isInjectable } from '../utils';
+import { BODY_METADATA, METHOD_METADATA, PATH_METADATA, QUERY_METADATA } from '../constants';
 import { RequestMethod } from '../enums';
 import { MethodMetadata } from '../decorators';
 import { validateBody, validateQuery } from '../validators';
@@ -24,6 +24,7 @@ export class NuxumApp {
   }
 
   private setupMiddlewares(): void {
+    this.instance.use(express.json());
     if (this.options.cors) this.instance.use(cors(this.options.cors === true ? {} : this.options.cors));
     if (this.options.defaultResponseHeaders) this.instance.use((req, res, next) => {
       for (const [key, value] of Object.entries(this.options.defaultResponseHeaders!)) res.setHeader(key, value);
@@ -57,16 +58,24 @@ export class NuxumApp {
         const method_path: string = Reflect.getMetadata(PATH_METADATA, prototype[property]);
         const method: RequestMethod = Reflect.getMetadata(METHOD_METADATA, prototype[property]);
 
-        this.registerRoute(method, (this.options.prefix || '') + path + method_path, handler);
-        Logger.route(RequestMethod[method], (this.options.prefix || '') + path + method_path);
+        const route_path = (this.options.prefix || '') + path + method_path;
+        this.registerRoute(method, this.cleanupPath(route_path), handler);
+        Logger.route(RequestMethod[method], this.cleanupPath(route_path));
       }
       Logger.controller(Controller.name);
     }
   }
 
+  private cleanupPath(path: string): string {
+    return path.replace(/\/\//g, '/');
+  }
+
   private createHandler(method: Function): (req: Request, res: Response, next: NextFunction) => void {
     return (req: Request, res: Response, next: NextFunction) => {
-      const routeOptions: MethodMetadata = Reflect.getMetadata(PATH_METADATA, method);
+      const routeOptions: MethodMetadata = {
+        body: Reflect.getMetadata(BODY_METADATA, method),
+        query: Reflect.getMetadata(QUERY_METADATA, method),
+      };
 
       if (!routeOptions) return next();
 
@@ -97,7 +106,6 @@ export class NuxumApp {
       case RequestMethod.OPTIONS: this.instance.options(routePath, handler); break;
       case RequestMethod.HEAD: this.instance.head(routePath, handler); break;
       case RequestMethod.ALL: this.instance.all(routePath, handler); break;
-      default: throw new Error(`Unsupported request method: ${method}`);
     }
   }
 
@@ -107,13 +115,8 @@ export class NuxumApp {
     });
   }
 
-  public use(middleware: Class): void {
-    if (!isInjectable(middleware)) throw new Error(`Middleware ${middleware.name} must be decorated with @Injectable()`);
-    this.instance.use((req, res, next) => new middleware().use(req, res, next));
-  }
-
-  public listen(port: string | number, callback?: () => void): void {
-    this.instance.listen(port, () => {
+  public listen(port: string | number, callback?: () => void) {
+    return this.instance.listen(port, () => {
       Logger.server(port);
       if (callback) callback();
     });

@@ -3,7 +3,7 @@ import request from 'supertest';
 import { NuxumApp } from '../../src/app/nuxum.app';
 import { Express } from 'express';
 import { beforeAll, describe, expect, it } from '@jest/globals';
-import { Controller, Get, Injectable, Post } from '../../src/decorators';
+import { All, Controller, Delete, Get, Head, Injectable, Options, Patch, Post, Put } from '../../src/decorators';
 import type { Request, Response } from 'express';
 
 describe('NuxumApp', () => {
@@ -24,6 +24,36 @@ describe('NuxumApp', () => {
       })
       post(req: Request, res: Response) {
         res.send('Hello, Post!');
+      }
+
+      @Put()
+      put(req: Request, res: Response) {
+        res.send('Hello, Put!');
+      }
+
+      @Delete()
+      delete(req: Request, res: Response) {
+        res.send('Hello, Delete!');
+      }
+
+      @Patch()
+      patch(req: Request, res: Response) {
+        res.send('Hello, Patch!');
+      }
+
+      @Options()
+      options(req: Request, res: Response) {
+        res.send('Hello, Options!');
+      }
+
+      @Head()
+      head(req: Request, res: Response) {
+        res.send('Hello, Head!');
+      }
+
+      @All()
+      all(req: Request, res: Response) {
+        res.send('Hello, All!');
       }
     }
 
@@ -68,7 +98,18 @@ describe('NuxumApp', () => {
     const response = await request(instance).get('/');
     expect(response.text).toBe('Hello, World!');
 
-    const postResponse = await request(instance).post('/post?name=test');
+    const postResponse = await request(instance).post('/post?name=test').send({ age: 18 });
     expect(postResponse.text).toBe('Hello, Post!');
+  });
+
+  it('should work when calling listen', async () => {
+    const nuxumApp = new NuxumApp({
+      controllers: [],
+      middlewares: [],
+    });
+    const server = nuxumApp.listen(8080, () => {
+      console.log('Listening on port 8080');
+    });
+    server.close();
   });
 });
