@@ -3,7 +3,7 @@ import request from 'supertest';
 import { NuxumApp } from '../../src/app/nuxum.app';
 import { Express } from 'express';
 import { beforeAll, describe, expect, it } from '@jest/globals';
-import { All, Controller, Delete, Get, Head, Injectable, Options, Patch, Post, Put } from '../../src/decorators';
+import { All, Controller, Delete, Get, Head, Injectable, Module, Options, Patch, Post, Put } from '../../src/decorators';
 import type { Request, Response } from 'express';
 
 describe('NuxumApp', () => {
@@ -14,7 +14,7 @@ describe('NuxumApp', () => {
     class TestController {
       @Get()
       index(req: Request, res: Response) {
-        res.send('Hello, World!');
+        res.set('Content-Type', 'text/plain').send('Hello, World!');
       }
 
       @Post({
@@ -23,7 +23,7 @@ describe('NuxumApp', () => {
         body: [{ name: 'age', required: true, type: 'number' }],
       })
       post(req: Request, res: Response) {
-        res.send('Hello, Post!');
+        res.set('Content-Type', 'text/plain').send('Hello, Post!');
       }
 
       @Put()
@@ -57,11 +57,16 @@ describe('NuxumApp', () => {
       }
     }
 
-    const nuxumApp = new NuxumApp({
+    @Module({
       controllers: [TestController],
+    })
+    class AppModule { }
+
+    const nuxumApp = new NuxumApp({
+      modules: [AppModule],
       middlewares: [],
       cors: true,
-      defaultResponseHeaders: { 'X-Powered-By': 'Nuxum' },
+      defaultResponseHeaders: { 'X-Powered-By': 'Nuxum', 'Content-Type': 'application/json' },
     });
     instance = nuxumApp['instance'];
   });
@@ -79,7 +84,6 @@ describe('NuxumApp', () => {
   it('should work when using middlewares', () => {
     expect(() => {
       new NuxumApp({
-        controllers: [],
         middlewares: [class TestMiddleware { use() { } }],
       });
     }).toThrowError('Middleware TestMiddleware must be decorated with @Injectable()');
@@ -88,7 +92,6 @@ describe('NuxumApp', () => {
     class TestMiddleware { use() { } }
     expect(() => {
       new NuxumApp({
-        controllers: [],
         middlewares: [TestMiddleware],
       });
     }).not.toThrowError();
@@ -103,8 +106,11 @@ describe('NuxumApp', () => {
   });
 
   it('should work when calling listen', async () => {
+    @Module({})
+    class AppModule { }
+
     const nuxumApp = new NuxumApp({
-      controllers: [],
+      modules: [AppModule],
       middlewares: [],
     });
     const server = nuxumApp.listen(8080, () => {

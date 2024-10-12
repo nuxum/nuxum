@@ -1,7 +1,17 @@
 import { CONTROLLER_METADATA, PATH_METADATA } from '../constants';
 import { isString, isUndefined } from '../utils';
 
+/**
+ * Controller metadata
+ * @param pathOrOptions Controller path or options
+ * @returns ClassDecorator
+ */
 export interface ControllerMetadata {
+  /**
+   * Controller path
+   * @default '/'
+   * @example '/api'
+   */
   path?: string | string[];
 };
 

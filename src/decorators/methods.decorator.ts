@@ -3,10 +3,38 @@ import { RequestMethod } from '../enums';
 import { isString, isUndefined } from '../utils';
 import { BodyOption, QueryOption } from '../validators';
 
+/**
+ * Method metadata
+ * @param pathOrOptions Method path or options
+ * @returns MethodDecorator
+ * @example
+ * @Get('/api')
+ * @Get({ path: '/api', query: [{ name: 'name', required: true }] })
+ */
 export interface MethodMetadata {
+  /**
+   * Method path
+   * @default '/'
+   * @example '/api'
+   * @example ['/api', '/v1']
+   */
   path?: string | string[];
+  /**
+   * Request method
+   * @default RequestMethod.GET
+   */
   method?: RequestMethod;
+  /**
+   * Query options
+   * @default []
+   * @example [{ name: 'name', required: true }]
+   */
   query?: QueryOption[];
+  /**
+   * Body options
+   * @default []
+   * @example [{ name: 'name', required: true }]
+   */
   body?: BodyOption[];
 };
 

@@ -1,13 +1,30 @@
 import cors from 'cors';
 import express from 'express';
 import type { Express, NextFunction, Request, Response } from 'express';
-import { isConstructor, isFunction, AppOptions, isInjectable } from '../utils';
-import { BODY_METADATA, METHOD_METADATA, PATH_METADATA, QUERY_METADATA } from '../constants';
+import { isConstructor, isFunction, AppOptions, isInjectable, isModule } from '../utils';
+import { BODY_METADATA, METHOD_METADATA, MODULE_METADATA_CONTROLLERS, MODULE_METADATA_IMPORTS, PATH_METADATA, QUERY_METADATA } from '../constants';
 import { RequestMethod } from '../enums';
 import { MethodMetadata } from '../decorators';
 import { validateBody, validateQuery } from '../validators';
 import { Logger } from '../utils/logger.util';
 
+/**
+ * NuxumApp class
+ * @class
+ * @classdesc NuxumApp class
+ * @example
+ * const app = new NuxumApp({
+ *  cors: true,
+ *  logger: true,
+ *  defaultResponseHeaders: { 'X-Powered-By': 'Nuxum' },
+ *  middlewares: [LoggerMiddleware],
+ *  modules: [AppModule]
+ * });
+ * 
+ * app.listen(3000, () => console.log('Server is running on port 3000'));
+ * @param options AppOptions
+ * @returns NuxumApp
+ */
 export class NuxumApp {
   private instance: Express;
   private options: AppOptions;
@@ -19,7 +36,7 @@ export class NuxumApp {
     Logger.initialize(this.options.logger || false);
 
     this.setupMiddlewares();
-    this.setupControllers();
+    this.setupModules();
     this.setupDefaultRoute();
   }
 
@@ -27,7 +44,10 @@ export class NuxumApp {
     this.instance.use(express.json());
     if (this.options.cors) this.instance.use(cors(this.options.cors === true ? {} : this.options.cors));
     if (this.options.defaultResponseHeaders) this.instance.use((req, res, next) => {
-      for (const [key, value] of Object.entries(this.options.defaultResponseHeaders!)) res.setHeader(key, value);
+      for (const [key, value] of Object.entries(this.options.defaultResponseHeaders!)) {
+        if (key === 'X-Powered-By') res.setHeader(key, 'Nuxum');
+        else res.setHeader(key, value);
+      }
       next();
     });
 
@@ -38,32 +58,38 @@ export class NuxumApp {
     }
   }
 
-  private setupControllers(): void {
-    if (this.options.controllers) for (const Controller of this.options.controllers) {
-      const path = Reflect.getMetadata(PATH_METADATA, Controller);
-      const prototype = Controller.prototype;
+  private setupModules(): void {
+    if (this.options.modules && this.options.modules.length !== 0) for (const Module of this.options.modules) this.loadModule(Module);
+  }
 
-      for (const property of Object.getOwnPropertyNames(prototype)) {
-        const descriptor = Object.getOwnPropertyDescriptor(prototype, property);
+  private loadModule(Module: any): void {
+    if (!isModule(Module)) throw new Error(`Module ${Module.name} must be decorated with @Module()`);
 
-        if (
-          !descriptor ||
-          descriptor.set ||
-          descriptor.get ||
-          isConstructor(property) ||
-          !isFunction(prototype[property])
-        ) continue;
+    const imports = Reflect.getMetadata(MODULE_METADATA_IMPORTS, Module) || [];
+    const controllers = Reflect.getMetadata(MODULE_METADATA_CONTROLLERS, Module) || [];
 
-        const handler = this.createHandler(prototype[property]);
-        const method_path: string = Reflect.getMetadata(PATH_METADATA, prototype[property]);
-        const method: RequestMethod = Reflect.getMetadata(METHOD_METADATA, prototype[property]);
+    if (imports.length > 0) for (const importedModule of imports) this.loadModule(importedModule);
+    if (controllers.length > 0) for (const Controller of controllers) this.setupController(Controller);
+  }
 
-        const route_path = (this.options.prefix || '') + path + method_path;
-        this.registerRoute(method, this.cleanupPath(route_path), handler);
-        Logger.route(RequestMethod[method], this.cleanupPath(route_path));
-      }
-      Logger.controller(Controller.name);
+  private setupController(Controller: any): void {
+    const path = Reflect.getMetadata(PATH_METADATA, Controller);
+    const prototype = Controller.prototype;
+
+    for (const property of Object.getOwnPropertyNames(prototype)) {
+      const descriptor = Object.getOwnPropertyDescriptor(prototype, property);
+
+      if (!descriptor || descriptor.set || descriptor.get || isConstructor(property) || !isFunction(prototype[property])) continue;
+
+      const handler = this.createHandler(prototype[property]);
+      const method_path: string = Reflect.getMetadata(PATH_METADATA, prototype[property]);
+      const method: RequestMethod = Reflect.getMetadata(METHOD_METADATA, prototype[property]);
+
+      const route_path = this.cleanupPath(((this.options.prefix || '') + path + method_path));
+      this.registerRoute(method, route_path, handler);
+      Logger.route(RequestMethod[method], route_path);
     }
+    Logger.controller(Controller.name);
   }
 
   private cleanupPath(path: string): string {
