@@ -16,12 +16,10 @@ import { Logger } from '../utils/logger.util';
  * const app = new NuxumApp({
  *  cors: true,
  *  logger: true,
- *  defaultResponseHeaders: { 'X-Powered-By': 'Nuxum' },
- *  middlewares: [LoggerMiddleware],
  *  modules: [AppModule]
  * });
  * 
- * app.listen(3000, () => console.log('Server is running on port 3000'));
+ * app.listen(3000);
  * @param options AppOptions
  * @returns NuxumApp
  */
@@ -43,13 +41,14 @@ export class NuxumApp {
   private setupMiddlewares(): void {
     this.instance.use(express.json());
     if (this.options.cors) this.instance.use(cors(this.options.cors === true ? {} : this.options.cors));
-    if (this.options.defaultResponseHeaders) this.instance.use((req, res, next) => {
-      for (const [key, value] of Object.entries(this.options.defaultResponseHeaders!)) {
-        if (key === 'X-Powered-By') res.setHeader(key, 'Nuxum');
-        else res.setHeader(key, value);
-      }
-      next();
-    });
+    if (this.options.defaultResponseHeaders) {
+      const keys = Object.keys(this.options.defaultResponseHeaders);
+      if (!keys.find(key => key.toLowerCase() === 'x-powered-by')) this.options.defaultResponseHeaders['X-Powered-By'] = 'Nuxum';
+      this.instance.use((req, res, next) => {
+        for (const [key, value] of Object.entries(this.options.defaultResponseHeaders!)) res.setHeader(key, value);
+        next();
+      });
+    }
 
     if (this.options.middlewares && this.options.middlewares.length !== 0) for (const Middleware of this.options.middlewares) {
       if (!isInjectable(Middleware)) throw new Error(`Middleware ${Middleware.name} must be decorated with @Injectable()`);
