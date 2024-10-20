@@ -1,12 +1,30 @@
 import { isNumber } from '../utils';
 
-export interface BodyData {
+type PrimitiveTypes = 'string' | 'number' | 'boolean';
+
+interface BaseBody {
   name: string;
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  type: PrimitiveTypes | 'object' | 'array';
   required?: boolean;
   match?: RegExp;
+}
+
+interface ObjectBody extends BaseBody {
+  type: 'object';
+  keys?: BodyData[];
+}
+
+interface ArrayBody extends BaseBody {
+  type: 'array';
+  itemType?: PrimitiveTypes | 'object' | 'array';
   nested?: BodyData[];
-};
+}
+
+interface PrimitiveBody extends BaseBody {
+  type: PrimitiveTypes;
+}
+
+export type BodyData = PrimitiveBody | ObjectBody | ArrayBody;
 
 export type BodyOption = string | BodyData;
 
@@ -35,11 +53,25 @@ export const validateBody = (body: any, options: BodyOption[] = []): boolean | s
           break;
         case 'object':
           if (typeof value !== 'object' || value === null) return `Invalid type for field: ${option.name}`;
-          if (option.nested) return validateBody(value, option.nested);
+          if (option.keys) {
+            const result = validateBody(value, option.keys);
+            if (result !== true) return result
+          }
           break;
         case 'array':
           if (!Array.isArray(value)) return `Invalid type for field: ${option.name}`;
-          if (option.nested) for (const item of value) return validateBody(item, option.nested);
+          switch (option.itemType) {
+            case 'object':
+            case 'array':
+              if (option.nested) for (const item of value) {
+                const result = validateBody(item, option.nested);
+                if (result !== true) return result;
+              };
+              break;
+            default:
+              if (typeof value !== option.itemType && !value.every((item: any) => typeof item === option.itemType)) return `Invalid type for item in field: ${option.name}`;
+              break;
+          }
           break;
       }
     }

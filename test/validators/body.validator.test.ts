@@ -53,7 +53,7 @@ describe('Body Validation', () => {
   it('should work when using custom typing with object', () => {
     const emptyBody = validateBody({}, [{ name: 'id', type: 'object', required: true }]);
     const wrongTypeBody = validateBody({ id: '1' }, [{ name: 'id', type: 'object', required: true }]);
-    const nestedBody = validateBody({ id: {} }, [{ name: 'id', type: 'object', required: true, nested: [{ name: 'name', type: 'string', required: true }] }]);
+    const nestedBody = validateBody({ id: {} }, [{ name: 'id', type: 'object', required: true, keys: [{ name: 'name', type: 'string', required: true }] }]);
     const filledBody = validateBody({ id: {} }, [{ name: 'id', type: 'object', required: true }]);
     expect(emptyBody).toBe('Missing required field: id');
     expect(wrongTypeBody).toBe('Invalid type for field: id');
