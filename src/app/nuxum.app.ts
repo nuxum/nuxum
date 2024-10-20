@@ -40,6 +40,7 @@ export class NuxumApp {
 
   private setupMiddlewares(): void {
     this.instance.use(express.json());
+    this.instance.use(express.urlencoded({ extended: true }));
     if (this.options.cors) this.instance.use(cors(this.options.cors === true ? {} : this.options.cors));
     if (this.options.defaultResponseHeaders) {
       const keys = Object.keys(this.options.defaultResponseHeaders);
